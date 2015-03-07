@@ -32,7 +32,7 @@ class ProductController extends Controller {
 	 */
 	public function index()
 	{
-		$products = Product::latest()->paginate(9);
+		$products = Product::latest()->paginate(6);
 
 		return view('product.index',compact('products'));
 	}
@@ -69,14 +69,15 @@ class ProductController extends Controller {
 		]);
 
 		$input = $request->all();
+		$product = new Product();
 
 		if ($request->hasFile('image')) {
 			$filename = Str::slug(Str::lower(
-					pathinfo($subimage->getClientOriginalName(), PATHINFO_FILENAME)
+					pathinfo($input['image']->getClientOriginalName(), PATHINFO_FILENAME)
 					. '-'
 					. 'tn'
 
-				)).'.'.$subimage->getClientOriginalExtension();
+				)).'.'.$input['image']->getClientOriginalExtension();
 			$pathToFile = public_path('images/');
 
 			File::exists($pathToFile) or File::makeDirectory($pathToFile, $mode = 0777, true, true);
@@ -85,10 +86,6 @@ class ProductController extends Controller {
 				->save($pathToFile . $filename);
 			$product->image = $filename;
 		}
-
-
-
-		$product = new Product();
 		$product->code = $input['code'];
 		$product->name = $input['name'];
 		$product->price = $input['price'];
@@ -96,8 +93,8 @@ class ProductController extends Controller {
 		$product->colour = $input['colour'];
 		$product->keterangan = $input['keterangan'];
 		$jenis = Auth::user()->product()->save($product);
-		$jenis->jenis()->attach($request->input('tags'));
-		return view('product.index');
+		$jenis->jenis()->attach($request->input('tag_lists'));
+		return redirect('dashboard/products');
 	}
 	/**
 	 * Display the specified resource.
@@ -133,6 +130,7 @@ class ProductController extends Controller {
 	 */
 	public function update(Request $request, $id)
 	{
+		//dd($request->input('tag_lists'));
 		$this->validate($request, [
 			//'code' => 'required|min:3|unique:products,code',
 			'name' => 'required',
@@ -161,19 +159,14 @@ class ProductController extends Controller {
 				->save($pathToFile . $filename);
 
 		}
-
-
-
 		$product->code = $input['code'];
 		$product->name = $input['name'];
 		$product->price = $input['price'];
 		$product->size = $input['size'];
 		$product->colour = $input['colour'];
-
 		$product->keterangan = $input['keterangan'];
-
 		$jenis = $product->save();
-		$jenis->jenis()->sync($request->input('tags'));
+		$product->jenis()->sync($request->input('tag_lists'));
 		return redirect('dashboard/products');
 
 
@@ -202,11 +195,8 @@ class ProductController extends Controller {
 	public function postSubimage(Request $request, $id)
 	{
 		$input = $request->all();
-		//dd(count($input['subimage']));
 
 		$product  = Product::findOrFail($id);
-
-
 
 		if ( $request->hasFile('subimage')){
 
@@ -251,6 +241,17 @@ class ProductController extends Controller {
 			return redirect()->back()->with('flash_message', 'pilih image yang mau di delete');
 		}
 		return redirect()->back();
+
+	}
+
+	public function getTags($tags)
+	{
+
+		$jenis = Jenis::whereName($tags)->first();
+		$categories = $jenis->products()->paginate();
+		return view('product.categories',compact('categories'));
+
+
 
 	}
 

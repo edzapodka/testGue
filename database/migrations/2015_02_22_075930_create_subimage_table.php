@@ -29,7 +29,7 @@ class CreateSubimageTable extends Migration {
 	 */
 	public function down()
 	{
-		Schema::drop('subimage');
+		Schema::drop('subimages');
 	}
 
 }
